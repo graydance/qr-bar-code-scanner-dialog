@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
 
 void main() {
@@ -13,7 +14,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-
   final _qrBarCodeScannerDialogPlugin = QrBarCodeScannerDialog();
   String? code;
 
@@ -42,6 +42,10 @@ class _MyAppState extends State<MyApp> {
           );
         }),
       ),
+      // here
+      navigatorObservers: [FlutterSmartDialog.observer],
+      // here
+      builder: FlutterSmartDialog.init(),
     );
   }
 }

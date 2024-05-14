@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 import 'qr_bar_code_scanner_dialog_platform_interface.dart';
@@ -26,28 +27,48 @@ class MethodChannelQrBarCodeScannerDialog
       {BuildContext? context, required Function(String? code) onScanSuccess}) {
     /// context is required to show alert in non-web platforms
     assert(context != null);
-
-    showDialog(
-        context: context!,
-        builder: (context) => Container(
-              alignment: Alignment.center,
-              child: Container(
-                height: 400,
-                width: 600,
-                margin: const EdgeInsets.all(20),
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: ScannerWidget(onScanSuccess: (code) {
-                  if (code != null) {
-                    Navigator.pop(context);
-                    onScanSuccess(code);
-                  }
-                }),
-              ),
-            ));
+    SmartDialog.show(
+      builder: (context) => Container(
+        alignment: Alignment.center,
+        child: Container(
+          height: 400,
+          width: 600,
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ScannerWidget(onScanSuccess: (code) {
+            if (code != null) {
+              SmartDialog.dismiss(status: SmartStatus.dialog);
+              onScanSuccess(code);
+            }
+          }),
+        ),
+      ),
+    );
+    // showDialog(
+    //     context: context!,
+    //     builder: (context) => Container(
+    //           alignment: Alignment.center,
+    //           child: Container(
+    //             height: 400,
+    //             width: 600,
+    //             margin: const EdgeInsets.all(20),
+    //             padding: const EdgeInsets.all(2),
+    //             decoration: BoxDecoration(
+    //               color: Colors.white,
+    //               borderRadius: BorderRadius.circular(10),
+    //             ),
+    //             child: ScannerWidget(onScanSuccess: (code) {
+    //               if (code != null) {
+    //                 Navigator.pop(context);
+    //                 onScanSuccess(code);
+    //               }
+    //             }),
+    //           ),
+    //         ));
   }
 }
 
@@ -96,7 +117,7 @@ class _ScannerWidgetState extends State<ScannerWidget> {
         ),
         ElevatedButton(
           onPressed: () {
-            Navigator.pop(context);
+            SmartDialog.dismiss(status: SmartStatus.dialog);
           },
           child: const Text("Stop scanning"),
         ),
