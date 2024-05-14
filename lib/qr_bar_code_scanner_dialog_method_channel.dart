@@ -27,6 +27,7 @@ class MethodChannelQrBarCodeScannerDialog
       {BuildContext? context, required Function(String? code) onScanSuccess}) {
     /// context is required to show alert in non-web platforms
     assert(context != null);
+    FocusManager.instance.primaryFocus?.unfocus();
     SmartDialog.show(
       builder: (context) => Container(
         alignment: Alignment.center,
