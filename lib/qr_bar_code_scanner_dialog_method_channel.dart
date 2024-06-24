@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_scankit/flutter_scankit.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 import 'qr_bar_code_scanner_dialog_platform_interface.dart';
 
@@ -24,15 +23,16 @@ class MethodChannelQrBarCodeScannerDialog
 
   @override
   void scanBarOrQrCode(
-      {BuildContext? context, required Function(String? code) onScanSuccess}) {
+      {BuildContext? context,
+      ScanType scanType = ScanType.all,
+      required Function(String? code) onScanSuccess}) {
     /// context is required to show alert in non-web platforms
     assert(context != null);
     FocusManager.instance.primaryFocus?.unfocus();
     SmartDialog.show(
-      builder: (context) => Container(
+      builder: (context) => Align(
         alignment: Alignment.center,
         child: Container(
-          height: 400,
           width: 600,
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(2),
@@ -40,68 +40,58 @@ class MethodChannelQrBarCodeScannerDialog
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: ScannerWidget(onScanSuccess: (code) {
-            if (code != null) {
-              SmartDialog.dismiss(status: SmartStatus.dialog);
-              onScanSuccess(code);
-            }
-          }),
+          child: ScannerWidget(
+              scanType: scanType,
+              onScanSuccess: (code) {
+                if (code != null) {
+                  SmartDialog.dismiss(status: SmartStatus.dialog);
+                  onScanSuccess(code);
+                }
+              }),
         ),
       ),
     );
-    // showDialog(
-    //     context: context!,
-    //     builder: (context) => Container(
-    //           alignment: Alignment.center,
-    //           child: Container(
-    //             height: 400,
-    //             width: 600,
-    //             margin: const EdgeInsets.all(20),
-    //             padding: const EdgeInsets.all(2),
-    //             decoration: BoxDecoration(
-    //               color: Colors.white,
-    //               borderRadius: BorderRadius.circular(10),
-    //             ),
-    //             child: ScannerWidget(onScanSuccess: (code) {
-    //               if (code != null) {
-    //                 Navigator.pop(context);
-    //                 onScanSuccess(code);
-    //               }
-    //             }),
-    //           ),
-    //         ));
   }
 }
 
 class ScannerWidget extends StatefulWidget {
   final void Function(String? code) onScanSuccess;
-
-  const ScannerWidget({super.key, required this.onScanSuccess});
+  final ScanType scanType;
+  const ScannerWidget(
+      {super.key, this.scanType = ScanType.all, required this.onScanSuccess});
 
   @override
   createState() => _ScannerWidgetState();
 }
 
 class _ScannerWidgetState extends State<ScannerWidget> {
-  QRViewController? controller;
+  final ScanKitController _controller = ScanKitController();
   GlobalKey qrKey = GlobalKey(debugLabel: 'scanner');
 
   bool isScanned = false;
 
   @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller?.pauseCamera();
-    } else if (Platform.isIOS) {
-      controller?.resumeCamera();
-    }
+  void initState() {
+    _controller.onResult.listen((result) {
+      debugPrint(
+          "scanning result:value=${result.originalValue} scanType=${result.scanType}");
+      if (!isScanned) {
+        isScanned = true;
+        widget.onScanSuccess(result.originalValue);
+      }
+
+      /// Note: Here the pop operation must be delayed.
+      Future(() {
+        SmartDialog.dismiss(status: SmartStatus.dialog);
+      });
+    });
+    super.initState();
   }
 
   @override
   void dispose() {
     /// dispose the controller
-    controller?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -116,43 +106,64 @@ class _ScannerWidgetState extends State<ScannerWidget> {
             child: _buildQrView(context),
           ),
         ),
-        ElevatedButton(
-          onPressed: () {
-            SmartDialog.dismiss(status: SmartStatus.dialog);
-          },
-          child: const Text("Stop scanning"),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                SmartDialog.dismiss(status: SmartStatus.dialog);
+              },
+              child: const Text("Stop scanning"),
+            ),
+            IconButton(
+              onPressed: () {
+                _controller.switchLight();
+              },
+              icon: const Icon(
+                Icons.lightbulb_outline_rounded,
+                color: Colors.blue,
+                size: 28,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildQrView(BuildContext context) {
-    double smallestDimension = min(
-        MediaQuery.of(context).size.width, MediaQuery.of(context).size.height);
-
+    double smallestDimension = MediaQuery.of(context).size.width;
     smallestDimension = min(smallestDimension, 550);
+    var rect = Rect.fromLTWH(0, 0, smallestDimension, smallestDimension);
+    int types = ScanTypes.all.bit;
+    if (widget.scanType == ScanType.barCode) {
+      types = ScanTypes.code39.bit |
+          ScanTypes.code128.bit |
+          ScanTypes.codaBar.bit |
+          ScanTypes.code93.bit |
+          ScanTypes.ean13.bit |
+          ScanTypes.ean8.bit |
+          ScanTypes.upcCodeE.bit |
+          ScanTypes.upcCodeA.bit;
+    } else if (widget.scanType == ScanType.qrCode) {
+      types = ScanTypes.qRCode.bit |
+          ScanTypes.aztec.bit |
+          ScanTypes.pdf417.bit |
+          ScanTypes.itf14.bit;
+    }
 
-    return QRView(
-      key: qrKey,
-      onQRViewCreated: (controller) {
-        _onQRViewCreated(controller);
-      },
-      overlay: QrScannerOverlayShape(
-          borderColor: Colors.black,
-          borderRadius: 10,
-          borderLength: 30,
-          borderWidth: 10,
-          cutOutSize: smallestDimension - 140),
+    return SizedOverflowBox(
+      alignment: Alignment.topCenter,
+      size: Size(smallestDimension, smallestDimension),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ScanKitWidget(
+          controller: _controller,
+          continuouslyScan: false,
+          boundingBox: rect,
+          format: types,
+        ),
+      ),
     );
-  }
-
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((Barcode scanData) async {
-      if (!isScanned) {
-        isScanned = true;
-        widget.onScanSuccess(scanData.code);
-      }
-    });
   }
 }

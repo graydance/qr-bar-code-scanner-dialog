@@ -3,6 +3,17 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'qr_bar_code_scanner_dialog_method_channel.dart';
 
+enum ScanType {
+  /// 1. QRCode
+  qrCode,
+
+  /// 2. BarCode
+  barCode,
+
+  /// 3. QRCode and BarCode
+  all,
+}
+
 abstract class QrBarCodeScannerDialogPlatform extends PlatformInterface {
   /// Constructs a QrBarCodeScannerDialogPlatform.
   QrBarCodeScannerDialogPlatform() : super(token: _token);
@@ -30,7 +41,9 @@ abstract class QrBarCodeScannerDialogPlatform extends PlatformInterface {
   }
 
   void scanBarOrQrCode(
-      {BuildContext? context, required Function(String?) onScanSuccess}) {
+      {BuildContext? context,
+      ScanType scanType = ScanType.all,
+      required Function(String? code) onScanSuccess}) {
     throw UnimplementedError('scanBarOrQrCodeWeb() has not been implemented.');
   }
 }

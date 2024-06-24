@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
+import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog_platform_interface.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +32,7 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () {
                     _qrBarCodeScannerDialogPlugin.getScannedQrBarCode(
                         context: context,
+                        scanType: ScanType.barCode,
                         onCode: (code) {
                           setState(() {
                             this.code = code;
