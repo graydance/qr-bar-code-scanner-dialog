@@ -30,6 +30,7 @@ class MethodChannelQrBarCodeScannerDialog
     assert(context != null);
     FocusManager.instance.primaryFocus?.unfocus();
     SmartDialog.show(
+      tag: "qr_bar_code_scanner_dialog",
       builder: (context) => Align(
         alignment: Alignment.center,
         child: Container(
@@ -44,7 +45,9 @@ class MethodChannelQrBarCodeScannerDialog
               scanType: scanType,
               onScanSuccess: (code) {
                 if (code != null) {
-                  SmartDialog.dismiss(status: SmartStatus.dialog);
+                  SmartDialog.dismiss(
+                      status: SmartStatus.dialog,
+                      tag: "qr_bar_code_scanner_dialog");
                   onScanSuccess(code);
                 }
               }),
@@ -73,17 +76,14 @@ class _ScannerWidgetState extends State<ScannerWidget> {
   @override
   void initState() {
     _controller.onResult.listen((result) {
+      SmartDialog.dismiss(
+          status: SmartStatus.dialog, tag: "qr_bar_code_scanner_dialog");
       debugPrint(
           "scanning result:value=${result.originalValue} scanType=${result.scanType}");
       if (!isScanned) {
         isScanned = true;
         widget.onScanSuccess(result.originalValue);
       }
-
-      /// Note: Here the pop operation must be delayed.
-      Future(() {
-        SmartDialog.dismiss(status: SmartStatus.dialog);
-      });
     });
     super.initState();
   }
@@ -111,7 +111,9 @@ class _ScannerWidgetState extends State<ScannerWidget> {
           children: [
             ElevatedButton(
               onPressed: () {
-                SmartDialog.dismiss(status: SmartStatus.dialog);
+                SmartDialog.dismiss(
+                    status: SmartStatus.dialog,
+                    tag: "qr_bar_code_scanner_dialog");
               },
               child: const Text("Stop scanning"),
             ),
