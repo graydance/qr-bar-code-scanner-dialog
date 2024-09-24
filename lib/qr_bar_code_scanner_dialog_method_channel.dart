@@ -25,6 +25,7 @@ class MethodChannelQrBarCodeScannerDialog
   void scanBarOrQrCode(
       {BuildContext? context,
       ScanType scanType = ScanType.all,
+      bool supportUrl = false,
       required Function(String? code) onScanSuccess}) {
     /// context is required to show alert in non-web platforms
     assert(context != null);
@@ -43,6 +44,7 @@ class MethodChannelQrBarCodeScannerDialog
           ),
           child: ScannerWidget(
               scanType: scanType,
+              supportUrl: supportUrl,
               onScanSuccess: (code) {
                 if (code != null) {
                   SmartDialog.dismiss(
@@ -60,8 +62,12 @@ class MethodChannelQrBarCodeScannerDialog
 class ScannerWidget extends StatefulWidget {
   final void Function(String? code) onScanSuccess;
   final ScanType scanType;
+  final bool supportUrl;
   const ScannerWidget(
-      {super.key, this.scanType = ScanType.all, required this.onScanSuccess});
+      {super.key,
+      this.scanType = ScanType.all,
+      this.supportUrl = false,
+      required this.onScanSuccess});
 
   @override
   createState() => _ScannerWidgetState();
@@ -70,16 +76,16 @@ class ScannerWidget extends StatefulWidget {
 class _ScannerWidgetState extends State<ScannerWidget> {
   final ScanKitController _controller = ScanKitController();
   GlobalKey qrKey = GlobalKey(debugLabel: 'scanner');
-
   bool isScanned = false;
 
   @override
   void initState() {
     _controller.onResult.listen((result) {
-      SmartDialog.dismiss(
-          status: SmartStatus.dialog, tag: "qr_bar_code_scanner_dialog");
       debugPrint(
           "scanning result:value=${result.originalValue} scanType=${result.scanType}");
+      if (!widget.supportUrl && _isUrl(result.originalValue)) {
+        return;
+      }
       if (!isScanned) {
         isScanned = true;
         widget.onScanSuccess(result.originalValue);
@@ -167,5 +173,13 @@ class _ScannerWidgetState extends State<ScannerWidget> {
         ),
       ),
     );
+  }
+
+  // 判断是否url链接
+  bool _isUrl(String url) {
+    const urlPattern =
+        r'^(https?:\/\/)?([a-zA-Z0-9.-]+(\.[a-zA-Z]{2,6})+)(\/[^\s]*)?$';
+    final regExp = RegExp(urlPattern);
+    return regExp.hasMatch(url);
   }
 }

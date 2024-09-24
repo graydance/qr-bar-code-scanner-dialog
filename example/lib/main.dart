@@ -32,7 +32,7 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () {
                     _qrBarCodeScannerDialogPlugin.getScannedQrBarCode(
                         context: context,
-                        scanType: ScanType.barCode,
+                        scanType: ScanType.all,
                         onCode: (code) {
                           setState(() {
                             this.code = code;
